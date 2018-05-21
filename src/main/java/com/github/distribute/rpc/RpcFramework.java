@@ -24,47 +24,41 @@ public class RpcFramework {
         for (;;) {
             final Socket socket = server.accept();//tcp×èÈûµÈ´ý
             try {
-                new Thread(new Runnable() {
-
-                    @Override
-                    public void run() {
+                new Thread(() -> {
+                    try {
                         try {
+                            ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
+
                             try {
-                                ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
+                                String interfaceName = input.readUTF();
+                                String methodName = input.readUTF();
+                                Class<?>[] parameterTypes = (Class<?>[]) input.readObject();
+                                Object[] arguments = (Object[]) input.readObject();
+                                ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
 
                                 try {
-                                    String interfaceName = input.readUTF();
-                                    String methodName = input.readUTF();
-                                    Class<?>[] parameterTypes = (Class<?>[]) input.readObject();
-                                    Object[] arguments = (Object[]) input.readObject();
-                                    ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
-
-                                    try {
-                                        if (!interfaceName.equals(interfaceClazz.getName())) {
-                                            throw new IllegalAccessException("Interface wrong, export:" + interfaceClazz
-                                                    + " refer:" + interfaceName);
-                                        }
-                                        Method method = service.getClass().getMethod(methodName, parameterTypes);
-                                        Object result = method.invoke(service, arguments);
-                                        output.writeObject(result);
-                                    } catch (Throwable t) {
-                                        output.writeObject(t);
-                                    } finally {
-                                        output.close();
+                                    if (!interfaceName.equals(interfaceClazz.getName())) {
+                                        throw new IllegalAccessException("Interface wrong, export:" + interfaceClazz
+                                                + " refer:" + interfaceName);
                                     }
-                                }  catch (Throwable t) {
-                                	t.printStackTrace();
+                                    Method method = service.getClass().getMethod(methodName, parameterTypes);
+                                    Object result = method.invoke(service, arguments);
+                                    output.writeObject(result);
+                                } catch (Throwable t) {
+                                    output.writeObject(t);
                                 } finally {
-                                    input.close();
+                                    output.close();
                                 }
-                            } 
-                            
-                            finally {
-                                socket.close();
+                            } catch (Throwable t) {
+                                t.printStackTrace();
+                            } finally {
+                                input.close();
                             }
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                        } finally {
+                            socket.close();
                         }
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }).start();
             } catch (Exception e) {
