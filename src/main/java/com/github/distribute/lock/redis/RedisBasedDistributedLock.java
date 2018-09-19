@@ -1,14 +1,15 @@
 package com.github.distribute.lock.redis;
 
+import redis.clients.jedis.Jedis;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
-
-import redis.clients.jedis.Jedis;
 
 /**
  * 基于Redis的SETNX操作实现的分布式锁
  * 
  * 获取锁时最好用lock(long time, TimeUnit unit), 以免网路问题而导致线程一直阻塞
+ * @author simon
  */
 public class RedisBasedDistributedLock extends AbstractLock {
 
@@ -27,6 +28,7 @@ public class RedisBasedDistributedLock extends AbstractLock {
 	}
 
 	// 阻塞式获取锁的实现
+	@Override
 	protected boolean lock(boolean useTimeout, long time, TimeUnit unit, boolean interrupt) throws InterruptedException {
 		System.out.println("test1");
 		if (interrupt) {
@@ -79,6 +81,7 @@ public class RedisBasedDistributedLock extends AbstractLock {
 		return false;
 	}
 
+	@Override
 	public boolean tryLock() {
 		long lockExpireTime = System.currentTimeMillis() + lockExpires + 1;// 锁超时时间
 		String stringOfLockExpireTime = String.valueOf(lockExpireTime);

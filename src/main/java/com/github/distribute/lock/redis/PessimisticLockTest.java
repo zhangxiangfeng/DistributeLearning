@@ -1,11 +1,11 @@
 package com.github.distribute.lock.redis;
 
+import redis.clients.jedis.Jedis;
+
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import redis.clients.jedis.Jedis;
 
 public class PessimisticLockTest {
 
@@ -40,6 +40,7 @@ public class PessimisticLockTest {
 	 * 初始化顾客开始抢商品
 	 */
 	public static void initClient() {
+
 		ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
 		int clientNum = 10000;// 模拟客户数目
 		for (int i = 0; i < clientNum; i++) {
@@ -106,7 +107,8 @@ class PessClientThread implements Runnable {
 		redisBasedDistributedLock = new RedisBasedDistributedLock(jedis, "lock.lock", 5 * 1000);
 	}
 
-	public void run() {
+    @Override
+    public void run() {
 		try {
 			Thread.sleep((int) (Math.random() * 5000));// 随机睡眠一下
 		} catch (InterruptedException e1) {

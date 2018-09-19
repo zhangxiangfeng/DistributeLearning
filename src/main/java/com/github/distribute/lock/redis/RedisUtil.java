@@ -32,7 +32,7 @@ public class RedisUtil {
             // 表示当borrow(引入)一个jedis实例时，最大的等待时间，如果超过等待时间，则直接抛出JedisConnectionException；
             config.setMaxWaitMillis(1000 * 100);
             config.setTestOnBorrow(true);
-            pool = new JedisPool(config, ip, port, 100000);
+            pool = new JedisPool(config, ip, port, 100000, null, 3);
         }
 
     }
