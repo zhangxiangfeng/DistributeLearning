@@ -11,9 +11,8 @@ import java.util.concurrent.Executors;
 /**
  * redis乐观锁实例
  *
- * @author linbingwen
+ * @author simon
  */
-@SuppressWarnings("ALL")
 public class OptimisticLockTest {
 
     public static void main(String[] args) throws InterruptedException {
@@ -49,8 +48,9 @@ public class OptimisticLockTest {
      */
     public static void initClient() {
         ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
-        int clientNum = 10000;// 模拟客户数目
+        int clientNum = 200;// 模拟客户数目
         for (int i = 0; i < clientNum; i++) {
+
             cachedThreadPool.execute(new ClientThread(i));
         }
         cachedThreadPool.shutdown();
@@ -97,10 +97,10 @@ public class OptimisticLockTest {
  * @author linbingwen
  */
 class ClientThread implements Runnable {
-    Jedis jedis = null;
-    String key = "prdNum";// 商品主键
-    String clientList = "clientList";//// 抢购到商品的顾客列表主键
-    String clientName;
+    private Jedis jedis = null;
+    private String key = "prdNum";//商品主键
+    private String clientList = "clientList";// 抢购到商品的顾客列表主键
+    private String clientName;
 
     public ClientThread(int num) {
         clientName = "编号=" + num;
@@ -109,7 +109,7 @@ class ClientThread implements Runnable {
     @Override
     public void run() {
         try {
-            Thread.sleep((int) (Math.random() * 5000));// 随机睡眠一下
+            Thread.sleep((int) (Math.random() * 2500));// 随机睡眠一下
         } catch (InterruptedException e1) {
         }
         while (true) {
@@ -117,15 +117,22 @@ class ClientThread implements Runnable {
             jedis = RedisUtil.getInstance().getJedis();
             try {
                 jedis.watch(key);
-                int prdNum = Integer.parseInt(jedis.get(key));// 当前商品个数
+                //step 1.获取当前商品个数
+                int prdNum = Integer.parseInt(jedis.get(key));
                 if (prdNum > 0) {
+                    //step 2.开始事物块
                     Transaction transaction = jedis.multi();
                     transaction.set(key, String.valueOf(prdNum - 1));
+
+                    //step 3.执行事物单元链
                     List<Object> result = transaction.exec();
+
                     if (result == null || result.isEmpty()) {
-                        System.out.println("悲剧了，顾客:" + clientName + "没有抢到商品");// 可能是watch-key被外部修改，或者是数据操作被驳回
+                        //step 4.执行失败:可能是watch-key被外部修改，或者是数据操作被驳回
+                        System.out.println("悲剧了，顾客:" + clientName + "没有抢到商品");
                     } else {
-                        jedis.sadd(clientList, clientName);// 抢到商品记录一下
+                        //step 4.执行成功会返回数组结果
+                        jedis.sadd(clientList, clientName);
                         System.out.println("好高兴，顾客:" + clientName + "抢到商品");
                         break;
                     }
@@ -136,10 +143,10 @@ class ClientThread implements Runnable {
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
+                //step 5.取消监视器,释放资源
                 jedis.unwatch();
                 RedisUtil.returnResource(jedis);
             }
-
         }
     }
 
