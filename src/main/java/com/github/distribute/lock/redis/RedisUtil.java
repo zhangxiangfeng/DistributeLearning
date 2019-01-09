@@ -21,8 +21,8 @@ public class RedisUtil {
 
     private RedisUtil() {
         if (pool == null) {
-            String ip = "127.0.0.1";
-            int port = 6379;
+            String ip = "prod-01-redis.frp.openread.cn";
+            int port = 10003;
             JedisPoolConfig config = new JedisPoolConfig();
             // 控制一个pool可分配多少个jedis实例，通过pool.getResource()来获取；
             // 如果赋值为-1，则表示不限制；如果pool已经分配了maxActive个jedis实例，则此时pool的状态为exhausted(耗尽)。
